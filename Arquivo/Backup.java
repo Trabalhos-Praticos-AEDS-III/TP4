@@ -1,209 +1,209 @@
 package Arquivo;
 
 import Modelo.LZW;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 
-public class Backup 
+public class Backup
 {
-    private static final String RED   = "\u001B[31m";
-    private static final String RESET = "\u001B[0m";
-    private static final String BACKUP_DIR = ".\\backups";
-    private static final String DATA_DIR = ".\\dados";
+    // Diretório para armazenar backups
+    private static final String BACKUP = ".\\backups";
+    // Diretório para armazenar dados originais
+    private static final String DATA = ".\\dados";
 
-    public Backup( ) 
+    public Backup()
     {
-        createDirectory( BACKUP_DIR );
-        createDirectory( DATA_DIR );
-    } // Backup ( )
+        // Garantir que os diretórios de backup e dados existem
+        createDirectory(BACKUP);
+        createDirectory(DATA);
+    }
 
-    public String getBackupDir( ) 
+    private void createDirectory(String path)
     {
-        return ( BACKUP_DIR );
-    } // getBackupDir ( )
-
-    public String getDataDir( ) 
-    {
-        return ( DATA_DIR );
-    } // getDataDir ( )
-
-    private void createDirectory( String path ) 
-    {
-        File dir = new File( path );
-        if( !dir.exists( ) ) {
-            dir.mkdirs( );
-        } // if
-    } // createDirectory ( )
-
-    private byte[] serializeFiles( File[] files ) 
-    {
-        byte[] bytes = null;
-        try 
+        // Cria o diretório especificado caso ele não exista
+        File dir = new File(path);
+        if (!dir.exists())
         {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream( );
-            DataOutputStream dos = new DataOutputStream(baos);
-            for( File file : files ) 
+            dir.mkdirs();
+        }
+    }
+
+    private byte[] serializeFiles(File[] files)
+    {
+        // Serializa os arquivos em um array de bytes
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             DataOutputStream dos = new DataOutputStream(baos))
+        {
+            for (File file : files)
             {
-                if( file.isFile( ) ) 
+                if (file.isFile())
                 {
-                    dos.writeUTF( file.getName( ) ); // nome do arquivo
-                    byte[] fileBytes = readFile( file ); 
-                    dos.writeInt( fileBytes.length );
-                    dos.write( fileBytes );
-                } // if
-            } // for
-            bytes = baos.toByteArray();
-        } catch( IOException e ) {
-            System.err.println( "Erro ao serializar arquivos: " + e.getMessage( ) );
-        } // try-catch ( )
-        return ( bytes );
-    } // serializeFiles ( )
+                    // Escreve o nome do arquivo
+                    dos.writeUTF(file.getName());
+                    // Lê o conteúdo do arquivo
+                    byte[] file_bytes = readFile(file);
+                    // Escreve o tamanho e o conteúdo do arquivo
+                    dos.writeInt(file_bytes.length);
+                    dos.write(file_bytes);
+                }
+            }
+            return baos.toByteArray();
+        }
+        catch (IOException e)
+        {
+            System.err.println("Erro" + e.getMessage());
+            return null;
+        }
+    }
 
-    private byte[] readFile( File file ) throws IOException 
+    private byte[] readFile(File file) throws IOException
     {
-        try( FileInputStream fis = new FileInputStream( file ) ) {
-            return ( fis.readAllBytes( ) );
-        } // try
-    } // readFile ( )
+        // Lê o conteúdo de um arquivo como array de bytes
+        try (FileInputStream fis = new FileInputStream(file))
+        {
+            return fis.readAllBytes();
+        }
+    }
 
-    private void writeFile( String filepath, byte[] data ) 
+    private void writeFile(String filepath, byte[] data)
     {
-        try( FileOutputStream fos = new FileOutputStream( filepath ) ) {
-            fos.write( data );
-        } catch( IOException e ) {
-            System.err.println( "Erro ao escrever arquivo: " + e.getMessage( ) );
-        } // try-catch
-    } // writeFile ( )
+        // Escreve um array de bytes em um arquivo especificado
+        try (FileOutputStream fos = new FileOutputStream(filepath))
+        {
+            fos.write(data);
+        }
+        catch (IOException e)
+        {
+            System.err.println("Erro " + e.getMessage());
+        }
+    }
 
-    public double calculateCompressRatio( byte[] dataOriginal, byte[] dataCompressed ) 
+    public double calculateCompressRatio(byte[] data_o, byte[] data_c)
     {
-        int tamanhoOriginal = dataOriginal.length;
-        int tamanhoComprimido = dataCompressed.length;
-    
-        double taxaCompressao = (1 - ((double) tamanhoComprimido / tamanhoOriginal)) * 100;
-        return taxaCompressao;
-    } // calculateCompressRatio ( )
-    
-    public void createBackup( String backupFile )
+        // Calcula a taxa de compressão entre os dados originais e comprimidos
+        int tamanho_o = data_o.length;
+        int tamanho_c = data_c.length;
+        return (1 - ((double) tamanho_c / tamanho_o)) * 100;
+    }
+
+    public void createBackup(String backup_file)
     {
         try
         {
-            createDirectory( BACKUP_DIR );
-            File dataDir = new File( DATA_DIR );
+            // Garante que o diretório de backup existe
+            createDirectory(BACKUP);
+            File data = new File(DATA);
 
-            String subDirPath = BACKUP_DIR + "\\" + backupFile.replace(".db", "");
-            createDirectory( subDirPath );
-    
-            if( !dataDir.exists( ) ) {
-                System.err.println( RED + "Diretório de dados não encontrado." + RESET );
-            } 
-            else
+            // Cria subdiretório para o backup atual
+            String sub_dir_path = BACKUP + "\\" + backup_file.replace(".db", "");
+            createDirectory(sub_dir_path);
+
+            if (data.exists())
             {
-                File[] files = dataDir.listFiles( );
-                if( files != null ) 
+                File[] files = data.listFiles();
+                if (files != null)
                 {
-                    byte[] dataOrig = serializeFiles(files);
-                    byte[] dataCompressed = LZW.codifica(dataOrig);
-    
-                    double compressRatio = calculateCompressRatio( dataOrig, dataCompressed );
-                    System.out.printf( "Taxa de compressão: %.2f%%\n", compressRatio );
+                    // Serializa e comprime os arquivos
+                    byte[] data_orig = serializeFiles(files);
+                    byte[] data_c = LZW.codifica(data_orig);
 
-                    writeFile( subDirPath + "\\" + backupFile, dataCompressed );
-                } // if
-            } // if
-        } catch( Exception e ) {
-            System.out.println( "Erro ao realizar o backup: " + e.getMessage( ) );
-        } // try-catch
-    } // createBackup ( )
+                    // Calcula e exibe a taxa de compressão
+                    double compressRatio = calculateCompressRatio(data_orig, data_c);
+                    System.out.printf("Taxa: %.2f%%\n", compressRatio);
 
-    public void restoreBackup( String backupFile )
-    {
-        File backup = new File( BACKUP_DIR + "\\" + backupFile );
-
-        if( !backup.exists( ) ) 
-        {
-            File subDir = new File( BACKUP_DIR + "\\" + backupFile.replace(".db", "") );
-            backup = new File( subDir, backupFile );
-        } // if
-
-        if( !backup.exists( ) ) {
-            System.err.println( RED + "Arquivo de backup não encontrado." + RESET );
+                    // Salva os dados comprimidos no subdiretório do backup
+                    writeFile(sub_dir_path + "\\" + backup_file, data_c);
+                }
+            }
         }
-        else
+        catch (Exception e)
         {
-            try 
-            {
-                byte[] backupData = readFile( backup );
-                backupData = LZW.decodifica( backupData );
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
 
-                ByteArrayInputStream bais = new ByteArrayInputStream( backupData );
-                DataInputStream dis = new DataInputStream( bais );  
-                clearDirectory( DATA_DIR );
-
-                while( dis.available() > 0 ) 
-                {
-                    String fileName = dis.readUTF( );
-                    int fileSize = dis.readInt( );
-                    byte[] fileBytes = new byte[fileSize];
-                    dis.readFully( fileBytes );
-
-                    writeFile( DATA_DIR + "\\" + fileName, fileBytes );
-                } // while
-
-            } catch( Exception e ) {
-                System.err.println( "Erro ao recuperar o backup: " + e.getMessage( ) );
-            } // try-catch
-        } // if
-    } // restoreBackup ( )
-
-    private void clearDirectory( String dirPath ) 
+    public void restoreBackup(String backup_file)
     {
-        File dir = new File( dirPath );
-        if( dir.exists( ) ) 
+        // Localiza o arquivo de backup no diretório de backups
+        File backup = new File(BACKUP + "\\" + backup_file);
+
+        if (!backup.exists())
         {
-            File[] files = dir.listFiles( );
-            if( files != null ) 
+            File sub_dir = new File(BACKUP + "\\" + backup_file.replace(".db", ""));
+            backup = new File(sub_dir, backup_file);
+        }
+
+        if (backup.exists()) {
+            try
             {
-                for( File file : files ) 
+                // Lê e decodifica os dados do backup
+                byte[] backup_data = readFile(backup);
+                backup_data = LZW.decodifica(backup_data);
+
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(backup_data);
+                     DataInputStream dis = new DataInputStream(bais))
                 {
-                    if( file.isFile( ) ) {
-                        file.delete( );
-                    } 
-                    else if( file.isDirectory( ) ) 
+                    // Limpa o diretório de dados antes da restauração
+                    clearDirectory(DATA);
+
+                    while (dis.available() > 0)
                     {
-                        clearDirectory( file.getPath( ) );
-                        file.delete( );
-                    } // if
-                } // for
-            } // if
-        } // if
-    } // clearDirectory ( )
+                        // Lê e recria cada arquivo do backup
+                        String file_n = dis.readUTF();
+                        int file_t = dis.readInt();
+                        byte[] file_bytes = new byte[file_t];
+                        dis.readFully(file_bytes);
+                        writeFile(DATA + "\\" + file_n, file_bytes);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                System.err.println("Erro ao recuperar o backup: " + e.getMessage());
+            }
+        }
+    }
 
-    public ArrayList<String> listBackups( ) 
+    private void clearDirectory(String dir_path)
     {
-        ArrayList<String> backups = new ArrayList<>( );
-        File backupDir = new File( BACKUP_DIR );
-        File[] subDirs = backupDir.listFiles( File::isDirectory );
-
-        if( subDirs == null || subDirs.length == 0 ) {
-            System.out.println( RED + "Nenhum backup encontrado." + RESET );
-        } 
-        else 
+        // Remove todos os arquivos e subdiretórios do diretório especificado
+        File dir = new File(dir_path);
+        if (dir.exists())
         {
-            System.out.println( "\nBackups disponíveis:" );
-            for( int i = 0; i < subDirs.length; i++ ) {
-                System.out.println((i + 1) + ": " + subDirs[i].getName());
-                backups.add( subDirs[i].getName( ) );
-            } // for
-        } // if
-        return ( backups );
-    } // listBackup ( )
+            File[] files = dir.listFiles();
+            if (files != null)
+            {
+                for (File file : files)
+                {
+                    if (file.isFile())
+                    {
+                        file.delete();
+                    }
+                    else if (file.isDirectory())
+                    {
+                        clearDirectory(file.getPath());
+                        file.delete();
+                    }
+                }
+            }
+        }
+    }
 
-} // Backup 
+    public ArrayList<String> listBackups()
+    {
+        // Lista os nomes dos subdiretórios no diretório de backups
+        ArrayList<String> backups = new ArrayList<>();
+
+        File backup = new File(BACKUP);
+        File[] sub_dirs = backup.listFiles(File::isDirectory);
+
+        if (sub_dirs != null)
+        {
+            for (File sub_dir : sub_dirs)
+            {
+                backups.add(sub_dir.getName());
+            }
+        }
+        return backups;
+    }
+}

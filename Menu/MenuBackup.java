@@ -9,34 +9,32 @@ import java.util.Scanner;
 public class MenuBackup 
 {
     private static Backup backup;
-    private static Scanner sc = new Scanner(System.in); // Scanner para entrada de dados
+    private static Scanner sc = new Scanner(System.in);
 
 
-    public MenuBackup () throws Exception {
-        backup = new Backup( );
-    } // BackupView ( )
+    public MenuBackup () throws Exception { backup = new Backup( ); }
 
 
     public void menu() throws Exception
     {
         int opcao;
-        System.out.println("\nAEDs-III 1.0           ");
-        System.out.println("-------------------------");
-        System.out.println("> Início > Backup        ");
-        System.out.println("1 - Realizar Backup      ");
-        System.out.println("2 - Restaurar Backup     ");
-        System.out.println("0 - Voltar               ");
-        System.out.print  ("Opção: "                  );
+        System.out.println("\nAEDsIII");
+        System.out.println("-------");
+        System.out.println("> Inicio > Backup");
+        System.out.println("1 - Realizar Backup");
+        System.out.println("2 - Restaurar Backup");
+        System.out.println("0 - Voltar");
+        System.out.print  ("Opção: ");
         try
         {
-            opcao = Integer.valueOf(sc.nextLine()); // Lê a escolha do usuário
+            opcao = Integer.valueOf(sc.nextLine());
         }
         catch (NumberFormatException e)
         {
-            opcao = -1; // Se ocorrer erro, define opção como inválida
+            opcao = -1;
         }
     
-        switch( opcao ) 
+        switch(opcao) 
         {
             case 0:
                 break;
@@ -46,63 +44,66 @@ public class MenuBackup
             case 2:
                 restaurarBackup( );
                 break;
-            
             default:
-                System.err.println("Opção inválida.");
+                System.err.println("Opcao invalida.");
+                break;
         }
-        
     } 
-    public static String getDataHoraAtual() 
-    {
-        return ( LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd--HH-mm-ss")) );
-    } 
+    public static String getDataHoraAtual() { return ( LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd--HH-mm-ss")) ); } 
 
     public static void realizarBackup( ) throws Exception
     {
-        System.out.println( "\n> Relizando Backup:" );
+        System.out.println( "\nBackup:" );
         try
         {
-            System.out.println( "\nConfirma a realização do backup? (S/N)" );
+            System.out.println( "\nConfirmar? (S/N)" );
             char resp = sc.nextLine( ).charAt(0);
 
             if( resp == 'S' || resp == 's' ) 
             {
-                backup.createBackup(getDataHoraAtual( )+".db" );
-                System.out.println("Backup realizado com sucesso." );
-            } else {
-                System.out.println("Operação cancelada." );
-            } // if
-        } catch ( Exception e ) {
-            System.err.println( "Erro ao realizar backup." );
-        } // try-catch
-    } // realizarBackup ( )
+                backup.createBackup(getDataHoraAtual( )+".db");
+                System.out.println("Backup realizado");
+            }
+            else
+            {
+                System.out.println("cancelado");
+            } 
+        }
+        catch (Exception e)
+        {
+            System.err.println("Erro");
+        } 
+    } 
 
-    public static void restaurarBackup( ) throws Exception
+    public static void restaurarBackup() throws Exception
     {
-        System.out.println( "\n> Restaurar Backup:" );
+        System.out.println("\nRestaurar");
         
         try
         {
-            ArrayList<String> backupsList =  backup.listBackups( );
+            ArrayList<String> backupsList = backup.listBackups();
 
-            if( !backupsList.isEmpty( ) ) 
+            if( !backupsList.isEmpty( )) 
             {
-                System.out.print( "ID do arquivo de backup: " );
+                System.out.print( "ID do arquivo de backup: ");
                 String input = sc.nextLine( );
     
-                if( input.length( ) > 0 ) 
+                if(input.length( ) > 0) 
                 {
-                    int idBackup = Integer.parseInt( input );
-                    backup.restoreBackup( backupsList.get( idBackup-1 )+".db" );
-                    System.out.println(  "Backup restaurado com sucesso."  );
-                } else {
-                    System.err.println(  "ID inválido. Operação cancelada!" );
-                } // if
-                
-            } // if
-        } catch ( Exception e ) {
-            System.err.println( "Erro ao restaurar backup." );
-        } // try-catch
-    } // restaurarBackup ( )
+                    int id_backup = Integer.parseInt(input);
+                    backup.restoreBackup( backupsList.get(id_backup-1 )+".db");
 
-} // BackUpView
+                    System.out.println( "Backup restaurado");
+                }
+                else
+                {
+                    System.err.println( "ID invalido");
+                } 
+            }
+        }
+        catch (Exception e)
+        {
+            System.err.println("Erro");
+        }
+    }
+} 
